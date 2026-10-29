@@ -75,7 +75,7 @@ export async function POST(request:Request){
    const answer=freeAnswer?.answer??(rule&&typeof info[rule.key]==="string"?info[rule.key].trim():"");
    if(answer){source=freeAnswer?.source??rule!.key;reply=formatKnowledgeAnswer(source,answer)}else{reply="チャット設定に回答がないため、ホテルのスタッフへ確認します。";status="waiting"}
   }
-  const afterHours=status==="waiting"&&!availability.open;
+  const afterHours=status==="waiting"&&!availability.open&&!isEmergency;
   if(afterHours&&!isEmergency)reply=`現在はスタッフ対応時間外です。ご用件はホテルへ送信しました。${availability.nextLabel??"次の対応時間"}にスタッフが確認します。`;
   const batch=adminDb.batch(),createdAt=Date.now();
   batch.set(thread,{roomId,status,afterHours,emergency:isEmergency,nextStaffResponse:afterHours?availability.nextLabel:null,lastMessageAt:FieldValue.serverTimestamp(),unreadByStaff:status==="waiting"?1:0},{merge:true});

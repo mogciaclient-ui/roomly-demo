@@ -17,6 +17,6 @@ export function formatKnowledgeAnswer(key:string|null|undefined,answer:string){
  const format=knowledgeFormats[key],parts=answer.split("/").map(part=>part.trim()).filter(Boolean);
  if(!format||parts.length<2)return parts.map(part=>`・${part}`).join("\n");
  const size=format.groupSize??format.labels.length,groups:string[]=[];
- for(let index=0;index<parts.length;index+=size){const group=parts.slice(index,index+size);groups.push(group.map((value,itemIndex)=>{const label=format.labels[itemIndex]??"補足",normalized=value.startsWith(`${label}：`)?value.slice(label.length+1).trim():value.startsWith(`${label}:`)?value.slice(label.length+1).trim():value;return `${label}：${normalized}`}).join("\n"))}
+ for(let index=0;index<parts.length;index+=size){const group=parts.slice(index,index+size);groups.push(group.map((value,itemIndex)=>{const label=format.labels[itemIndex]??"補足",normalized=value.startsWith(`${label}：`)?value.slice(label.length+1).trim():value.startsWith(`${label}:`)?value.slice(label.length+1).trim():value.startsWith(`${label}は`)?value.slice(label.length+1).trim():value;return `${label}：${normalized}`}).join("\n"))}
  return [format.title,...groups].join("\n\n");
 }
