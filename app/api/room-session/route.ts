@@ -2,15 +2,6 @@ import {FieldValue,Timestamp} from "firebase-admin/firestore";
 import {adminDb,requireUser} from "@/lib/firebase-admin";
 import {rejectUnsafeRequest} from "@/lib/request-security";
 
-const defaultRichMenu=[
- {label:"公式HP",icon:"↗",prompt:"",actionType:"external_link",url:"",description:"宿泊案内・アクセス"},
- {label:"Instagram",icon:"↗",prompt:"",actionType:"external_link",url:"",description:"館内や周辺の雰囲気"},
- {label:"タクシー手配",icon:"◇",prompt:"タクシーを手配してください",actionType:"handoff_category",description:"フロントへ依頼を送信"},
- {label:"アメニティ依頼",icon:"＋",prompt:"追加のアメニティをお願いします",actionType:"handoff_category",description:"追加タオルなど"},
- {label:"言語変更",icon:"文",prompt:"",actionType:"language",description:"表示言語を切り替え"},
- {label:"フロントに聞く",icon:"◉",prompt:"スタッフに相談したいです",actionType:"human_handoff",description:"有人チャットへ切替"},
-] as const;
-
 export async function POST(request:Request){
  try{
   const rejected=rejectUnsafeRequest(request,4096);if(rejected)return rejected;
@@ -35,8 +26,7 @@ export async function POST(request:Request){
   await adminDb.doc(`guestSessions/${user.uid}`).set({uid:user.uid,roomToken,stayId,facilityId:data.facilityId,roomId:data.roomId,threadId,active:true,createdAt:FieldValue.serverTimestamp(),expiresAt:validUntil});
   const nights=Math.max(1,Math.ceil((validUntil.toMillis()-validFrom.toMillis())/86400000));
   await adminDb.doc(`facilities/${data.facilityId}/threads/${threadId}`).set({stayId,roomId:data.roomId,roomNumber:room.roomNumber??data.roomNumber,guestName:stay.guestName||"ゲスト様",guests:stay.guests??1,nights,language:stay.language??"ja",handoverNote:stay.memo??"",status:"ai",lastMessageAt:FieldValue.serverTimestamp(),unreadByStaff:0},{merge:true});
-  const configuredMenu=Array.isArray(facility.richMenu)?facility.richMenu:[];
-  return Response.json({facilityId:data.facilityId,roomId:data.roomId,threadId,facilityName:facility.name??"宿泊施設",roomNumber:room.roomNumber??data.roomNumber,language:stay.language??"ja",richMenu:configuredMenu.length>0?configuredMenu:defaultRichMenu,richMenuImageUrl:configuredMenu.length>0?null:"/guest-rich-menu-default.svg",staffHours:facility.staffHours??[],validFrom:validFrom.toMillis(),expiresAt:validUntil.toMillis()});
+  return Response.json({facilityId:data.facilityId,roomId:data.roomId,threadId,facilityName:facility.name??"宿泊施設",roomNumber:room.roomNumber??data.roomNumber,language:stay.language??"ja",staffHours:facility.staffHours??[],validFrom:validFrom.toMillis(),expiresAt:validUntil.toMillis()});
  }catch(error){
   const unauthorized=error instanceof Error&&error.message==="UNAUTHORIZED";
   return Response.json({error:unauthorized?"unauthorized":"session_failed"},{status:unauthorized?401:500});
