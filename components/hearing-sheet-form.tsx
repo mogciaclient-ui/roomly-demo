@@ -39,24 +39,27 @@ const E2E_SAMPLE_SHEET:Record<string,Entry[]>={
 };
 
 const emptyEntry=(section:Section)=>Object.fromEntries(section.fields.map(field=>[field.key,""]));
+const emptySheet=()=>Object.fromEntries(sections.map(section=>[section.id,[emptyEntry(section)]])) as Record<string,Entry[]>;
 const parseSheet=(value:string|undefined)=>{try{return value?JSON.parse(value) as Record<string,Entry[]>:{}}catch{return {}}};
 
 export function HearingSheetForm(){
  const {state,update}=useDemo();
  const facility=state.facilities.find(item=>item.id===state.activeFacilityId)!;
  const stored=useMemo(()=>parseSheet(facility.info.hearingSheet),[facility.id,facility.info.hearingSheet]);
- const shouldSeed=!Object.values(stored).some(rows=>rows.some(entry=>Object.values(entry).some(value=>value.trim())));
+ const shouldSeed=!facility.info.hearingSheet;
  const initial=shouldSeed?E2E_SAMPLE_SHEET:stored;
  const [sheet,setSheet]=useState<Record<string,Entry[]>>(()=>Object.fromEntries(sections.map(section=>[section.id,initial[section.id]?.length?initial[section.id]:[emptyEntry(section)]])));
  const [expanded,setExpanded]=useState<Record<string,number|null>>({wifi:0});
  const [saved,setSaved]=useState(false);
- const persist=(next:Record<string,Entry[]>)=>{setSheet(next);update(current=>{const target=current.facilities.find(item=>item.id===facility.id)!;target.info.hearingSheet=JSON.stringify(next);for(const section of sections){const text=(next[section.id]??[]).flatMap(entry=>section.fields.map(field=>entry[field.key]?.trim()).filter(Boolean)).join(" / ");if(text)target.info[section.id]=text}return current})};
+ const [cleared,setCleared]=useState(false);
+ const persist=(next:Record<string,Entry[]>)=>{setSheet(next);update(current=>{const target=current.facilities.find(item=>item.id===facility.id)!;target.info.hearingSheet=JSON.stringify(next);for(const section of sections){const text=(next[section.id]??[]).flatMap(entry=>section.fields.map(field=>entry[field.key]?.trim()).filter(Boolean)).join(" / ");target.info[section.id]=text}return current})};
  useEffect(()=>{if(shouldSeed)persist(E2E_SAMPLE_SHEET)},[facility.id]);
  const add=(section:Section)=>{const next={...sheet,[section.id]:[...(sheet[section.id]??[]),emptyEntry(section)]};persist(next);setExpanded(current=>({...current,[section.id]:next[section.id].length-1}))};
  const change=(section:Section,index:number,key:string,value:string)=>{const rows=(sheet[section.id]??[]).map((entry,rowIndex)=>rowIndex===index?{...entry,[key]:value}:entry);persist({...sheet,[section.id]:rows})};
  const remove=(section:Section,index:number)=>{const rows=(sheet[section.id]??[]).filter((_,rowIndex)=>rowIndex!==index);persist({...sheet,[section.id]:rows.length?rows:[emptyEntry(section)]});setExpanded(current=>({...current,[section.id]:null}))};
+ const clearAll=()=>{if(!window.confirm("チャット設定のすべての項目を消去します。施設・客室・宿泊情報・チャット履歴は削除されません。よろしいですか？"))return;persist(emptySheet());setExpanded({});setCleared(true);window.setTimeout(()=>setCleared(false),2200)};
  return <div className="public-hearing chat-settings-sheet">
-  <header><p>ROOMLY CHAT SETTINGS</p><h1>AIチャットの回答設定</h1><div>お客様からよく聞かれる内容を登録してください。登録した情報はAIの回答に使用されます。</div></header>
+  <header className="chat-settings-header"><div><p>ROOMLY CHAT SETTINGS</p><h1>AIチャットの回答設定</h1><div>お客様からよく聞かれる内容を登録してください。登録した情報はAIの回答に使用されます。</div></div><button type="button" className="clear-chat-settings" onClick={clearAll}>{cleared?"消去しました":"データを消去"}</button></header>
   <div className="hearing-section-list">{sections.map(section=><section className="sheet-section" key={section.id}><header><div><h2>{section.title}</h2><p>{section.description}</p></div><button type="button" onClick={()=>add(section)}>＋追加</button></header><div className="sheet-rows">{(sheet[section.id]??[]).map((entry,index)=>{const isOpen=expanded[section.id]===index;const summary=section.fields.slice(0,4).map(field=>entry[field.key]?.trim()||"未入力");return <article key={`${section.id}-${index}`}><div className="sheet-row-summary">{summary.map((value,summaryIndex)=><span key={summaryIndex}>{value}</span>)}<button type="button" onClick={()=>setExpanded(current=>({...current,[section.id]:isOpen?null:index}))}>{isOpen?"閉じる":"＋詳細"}</button></div>{isOpen?<div className="sheet-row-fields">{section.fields.map(field=><label key={field.key}>{field.label}<input value={entry[field.key]??""} placeholder={field.placeholder} onChange={event=>change(section,index,field.key,event.target.value)}/></label>)}<button className="sheet-remove" type="button" onClick={()=>remove(section,index)}>この項目を削除</button></div>:null}</article>})}</div></section>)}</div>
   <button className="sheet-submit" type="button" onClick={()=>{setSaved(true);window.setTimeout(()=>setSaved(false),2200)}}>{saved?"保存しました":"チャット設定を保存"}</button>
  </div>;
