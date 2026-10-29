@@ -17,6 +17,21 @@ const knowledgeRules=[
 const actionRequest=/持って|追加|予約|変更|手配|呼んで|探して|忘れ物|清掃|故障|壊れ|苦情|スタッフ|お願い|来て/;
 const emergencyRequest=/火事|火災|救急|倒れ|閉じ込め|息が|けが|怪我/;
 
+type StaffHours={start:string;end:string};
+function toMinutes(value:string){const [hour,minute]=value.split(":").map(Number);return Number.isFinite(hour)&&Number.isFinite(minute)?hour*60+minute:null}
+function staffAvailability(hours:StaffHours[],now=new Date()){
+ if(hours.length===0)return {open:true,nextLabel:null};
+ const parts=new Intl.DateTimeFormat("en-US",{timeZone:"Asia/Tokyo",hour:"2-digit",minute:"2-digit",hourCycle:"h23"}).formatToParts(now);
+ const current=Number(parts.find(part=>part.type==="hour")?.value)*60+Number(parts.find(part=>part.type==="minute")?.value);
+ const periods=hours.map(period=>({...period,startMinutes:toMinutes(period.start),endMinutes:toMinutes(period.end)})).filter((period):period is StaffHours&{startMinutes:number;endMinutes:number}=>period.startMinutes!==null&&period.endMinutes!==null).sort((a,b)=>a.startMinutes-b.startMinutes);
+ if(periods.length===0)return {open:true,nextLabel:null};
+ const open=periods.some(period=>period.startMinutes<period.endMinutes?current>=period.startMinutes&&current<period.endMinutes:current>=period.startMinutes||current<period.endMinutes);
+ if(open)return {open:true,nextLabel:null};
+ const today=periods.find(period=>period.startMinutes>current);
+ const next=today??periods[0];
+ return {open:false,nextLabel:`${today?"本日":"明日"}${next.start.replace(/^0/,"")}以降`};
+}
+
 type SheetEntry=Record<string,string>;
 function parseHearingSheet(value:unknown):Record<string,SheetEntry[]>{
  if(typeof value!=="string")return {};
@@ -40,10 +55,13 @@ export async function POST(request:Request){
   if(!snap.exists||!session?.active||session.expiresAt.toMillis()<Date.now())return Response.json({error:"session_expired"},{status:403});
   const {facilityId,threadId,roomId}=session;
   const thread=adminDb.doc(`facilities/${facilityId}/threads/${threadId}`);
-  const info=(await adminDb.doc(`facilities/${facilityId}/info/main`).get()).data()??{};
-  let reply="",status:"ai"|"waiting"="ai",source:string|null=null;
+  const [infoSnap,facilitySnap]=await Promise.all([adminDb.doc(`facilities/${facilityId}/info/main`).get(),adminDb.doc(`facilities/${facilityId}`).get()]);
+  const info=infoSnap.data()??{},facility=facilitySnap.data()??{};
+  const availability=staffAvailability(Array.isArray(facility.staffHours)?facility.staffHours:[]);
+  let reply="",status:"ai"|"waiting"="ai",source:string|null=null,isEmergency=false;
   if(emergencyRequest.test(text)){
-   reply=`緊急の可能性があります。${info.emergency??"客室電話またはフロントへご連絡ください。"}`;
+   isEmergency=true;
+   reply=`緊急の可能性があります。命に関わる場合は、すぐに119番へ連絡してください。${info.emergency??"客室電話またはホテルの緊急連絡先へご連絡ください。"}`;
    status="waiting";
   }else if(actionRequest.test(text)){
    reply="スタッフによる対応が必要なため、ホテルへお伝えしました。そのままお待ちください。";
@@ -55,12 +73,14 @@ export async function POST(request:Request){
    const answer=freeAnswer?.answer??(rule&&typeof info[rule.key]==="string"?info[rule.key].trim():"");
    if(answer){reply=answer;source=freeAnswer?.source??rule!.key}else{reply="チャット設定に回答がないため、ホテルのスタッフへ確認します。";status="waiting"}
   }
+  const afterHours=status==="waiting"&&!availability.open;
+  if(afterHours&&!isEmergency)reply=`現在はスタッフ対応時間外です。ご用件はホテルへ送信しました。${availability.nextLabel??"次の対応時間"}にスタッフが確認します。`;
   const batch=adminDb.batch(),createdAt=Date.now();
-  batch.set(thread,{roomId,status,lastMessageAt:FieldValue.serverTimestamp(),unreadByStaff:status==="waiting"?1:0},{merge:true});
+  batch.set(thread,{roomId,status,afterHours,emergency:isEmergency,nextStaffResponse:afterHours?availability.nextLabel:null,lastMessageAt:FieldValue.serverTimestamp(),unreadByStaff:status==="waiting"?1:0},{merge:true});
   batch.set(thread.collection("messages").doc(),{from:"guest",text:text.trim(),createdAt:Timestamp.fromMillis(createdAt),guestUid:user.uid});
   batch.set(thread.collection("messages").doc(),{from:"ai",text:reply,source,createdAt:Timestamp.fromMillis(createdAt+1)});
   await batch.commit();
-  return Response.json({type:status==="waiting"?"handoff":"answer",text:reply,source});
+  return Response.json({type:status==="waiting"?"handoff":"answer",text:reply,source,afterHours,nextStaffResponse:afterHours?availability.nextLabel:null});
  }catch(error){
   const unauthorized=error instanceof Error&&error.message==="UNAUTHORIZED";
   return Response.json({error:unauthorized?"unauthorized":"message_failed"},{status:unauthorized?401:500});
