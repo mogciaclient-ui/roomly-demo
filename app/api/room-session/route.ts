@@ -2,12 +2,12 @@ import {FieldValue,Timestamp} from "firebase-admin/firestore";
 import {adminDb,requireUser} from "@/lib/firebase-admin";
 
 const defaultRichMenu=[
- {label:"Wi-Fi",icon:"⌁",prompt:"Wi-FiのSSIDとパスワードを教えてください",type:"question",description:"接続方法"},
- {label:"館内案内",icon:"⌂",prompt:"館内施設と営業時間を教えてください",type:"question",description:"施設・営業時間"},
- {label:"アメニティ",icon:"＋",prompt:"利用できるアメニティを教えてください",type:"question",description:"備品のご案内"},
- {label:"タクシー",icon:"◇",prompt:"タクシーを手配してください",type:"request",description:"スタッフへ依頼"},
- {label:"周辺案内",icon:"◎",prompt:"周辺のおすすめやコンビニを教えてください",type:"question",description:"近隣スポット"},
- {label:"フロント",icon:"◉",prompt:"スタッフに相談したいです",type:"request",description:"有人対応へ"},
+ {label:"公式HP",icon:"↗",prompt:"",actionType:"external_link",url:"",description:"宿泊案内・アクセス"},
+ {label:"Instagram",icon:"↗",prompt:"",actionType:"external_link",url:"",description:"館内や周辺の雰囲気"},
+ {label:"タクシー手配",icon:"◇",prompt:"タクシーを手配してください",actionType:"handoff_category",description:"フロントへ依頼を送信"},
+ {label:"アメニティ依頼",icon:"＋",prompt:"追加のアメニティをお願いします",actionType:"handoff_category",description:"追加タオルなど"},
+ {label:"言語変更",icon:"文",prompt:"",actionType:"language",description:"表示言語を切り替え"},
+ {label:"フロントに聞く",icon:"◉",prompt:"スタッフに相談したいです",actionType:"human_handoff",description:"有人チャットへ切替"},
 ] as const;
 
 export async function POST(request:Request){
