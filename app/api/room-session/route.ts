@@ -33,7 +33,7 @@ export async function POST(request:Request){
   const nights=Math.max(1,Math.ceil((validUntil.toMillis()-validFrom.toMillis())/86400000));
   await adminDb.doc(`facilities/${data.facilityId}/threads/${threadId}`).set({stayId,roomId:data.roomId,roomNumber:room.roomNumber??data.roomNumber,guestName:stay.guestName||"ゲスト様",guests:stay.guests??1,nights,language:stay.language??"ja",handoverNote:stay.memo??"",status:"ai",lastMessageAt:FieldValue.serverTimestamp(),unreadByStaff:0},{merge:true});
   const configuredMenu=Array.isArray(facility.richMenu)?facility.richMenu:[];
-  return Response.json({facilityId:data.facilityId,roomId:data.roomId,threadId,facilityName:facility.name??"宿泊施設",roomNumber:room.roomNumber??data.roomNumber,language:stay.language??"ja",richMenu:configuredMenu.length>0?configuredMenu:defaultRichMenu,staffHours:facility.staffHours??[],validFrom:validFrom.toMillis(),expiresAt:validUntil.toMillis()});
+  return Response.json({facilityId:data.facilityId,roomId:data.roomId,threadId,facilityName:facility.name??"宿泊施設",roomNumber:room.roomNumber??data.roomNumber,language:stay.language??"ja",richMenu:configuredMenu.length>0?configuredMenu:defaultRichMenu,richMenuImageUrl:configuredMenu.length>0?null:"/guest-rich-menu-default.svg",staffHours:facility.staffHours??[],validFrom:validFrom.toMillis(),expiresAt:validUntil.toMillis()});
  }catch(error){
   const unauthorized=error instanceof Error&&error.message==="UNAUTHORIZED";
   return Response.json({error:unauthorized?"unauthorized":"session_failed"},{status:unauthorized?401:500});

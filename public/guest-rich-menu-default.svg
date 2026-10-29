@@ -1,0 +1,18 @@
+<svg width="1200" height="810" viewBox="0 0 1200 810" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1200" height="810" fill="#E9DDD1"/>
+  <g fill="#F7F2EC">
+    <rect x="24" y="24" width="552" height="238" rx="18"/><rect x="624" y="24" width="552" height="238" rx="18"/>
+    <rect x="24" y="286" width="552" height="238" rx="18"/><rect x="624" y="286" width="552" height="238" rx="18"/>
+    <rect x="24" y="548" width="552" height="238" rx="18"/><rect x="624" y="548" width="552" height="238" rx="18"/>
+  </g>
+  <g fill="#AD2218" font-family="Arial, 'Noto Sans JP', sans-serif" font-size="40" font-weight="700">
+    <text x="80" y="105">Wi-Fi</text><text x="680" y="105">館内案内</text>
+    <text x="80" y="367">アメニティ</text><text x="680" y="367">タクシー</text>
+    <text x="80" y="629">周辺案内</text><text x="680" y="629">フロントに聞く</text>
+  </g>
+  <g fill="#6A5147" font-family="Arial, 'Noto Sans JP', sans-serif" font-size="24">
+    <text x="80" y="160">SSID・パスワード</text><text x="680" y="160">施設・営業時間</text>
+    <text x="80" y="422">備品のご案内</text><text x="680" y="422">スタッフへ依頼</text>
+    <text x="80" y="684">近隣スポット</text><text x="680" y="684">有人対応へ切替</text>
+  </g>
+</svg>
