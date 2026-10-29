@@ -23,7 +23,7 @@ export function ProductionGuest({params}:{params:Promise<{roomToken:string}>}){
  function submit(event:FormEvent){event.preventDefault();void send(input)}
  if(expired)return <main className="guest-shell center"><div className="invalid-card"><div className="qr-icon">✓</div><h1>ご利用ありがとうございました</h1><p><span>チェックアウト時刻を過ぎたため、</span><span>このチャットの利用は終了しました。</span></p></div></main>;
  if(loadError)return <main className="guest-shell center"><div className="invalid-card"><div className="qr-icon">!</div><h1>この客室ページは<br/>現在利用できません</h1><p><span>リンクが無効になっている可能性があります。</span><span>客室またはフロントの最新案内をご確認ください。</span></p></div></main>;
- if(!session)return <div className="app-loading" aria-label="読み込み中"><div className="guest-brand">Roomly<span>.</span></div></div>;
+ if(!session)return <div className="app-loading" role="status"><div className="guest-brand">Roomly<span>.</span></div><p>客室を確認中</p></div>;
  return <main className="guest-shell production-chat">
   <header className="production-guest-header"><div className="production-brand-mark"><span>R</span></div><div><b>Roomly<span>.</span></b><small>{session.facilityName} · {formatRoomLabel(session.roomNumber)}</small></div></header>
   {staffHours?<div className="production-service-note"><i/> スタッフ対応時間 {staffHours}</div>:null}

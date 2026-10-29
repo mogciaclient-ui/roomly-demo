@@ -39,6 +39,6 @@ export function ProductionProvider({children}:{children:React.ReactNode}){
  const update=(fn:(value:DemoState)=>DemoState)=>setState(current=>{const next=fn(structuredClone(current));if(timer.current)clearTimeout(timer.current);timer.current=setTimeout(()=>void persist(next),350);return next});
  const sendStaff=(threadId:string,text:string,facility=false)=>update(value=>{const thread=value.threads.find(x=>x.id===threadId);if(!thread)return value;const now=Date.now();thread.messages.push({id:crypto.randomUUID(),from:facility?"facility":"staff",text,createdAt:now,staffName:value.currentStaff});thread.lastMessageAt=now;thread.status="staff";thread.assignee=value.currentStaff;thread.unreadByStaff=0;thread.afterHours=false;thread.nextStaffResponse=undefined;return value});
  const context=useMemo<RoomlyContextValue>(()=>({state,update,reset:()=>{},sendGuest:()=>{},sendStaff,syncMode:"firebase"}),[state]);
- if(!ready)return <div className="app-loading" aria-label="読み込み中"><div className="guest-brand">Roomly<span>.</span></div></div>;
+ if(!ready)return <div className="app-loading" role="status"><div className="guest-brand">Roomly<span>.</span></div><p>施設情報を読み込み中</p></div>;
  return <RoomlyContext.Provider value={context}>{children}</RoomlyContext.Provider>;
 }
