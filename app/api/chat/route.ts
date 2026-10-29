@@ -1,6 +1,7 @@
 import {FieldValue,Timestamp} from "firebase-admin/firestore";
 import {adminDb,requireUser} from "@/lib/firebase-admin";
 import {formatKnowledgeAnswer} from "@/lib/format-knowledge";
+import {rejectUnsafeRequest} from "@/lib/request-security";
 
 const knowledgeRules=[
  {pattern:/wi.?fi|ワイファイ|ssid|パスワード/i,key:"wifi"},
@@ -49,6 +50,7 @@ function answerFromFreeEntries(text:string,sheet:Record<string,SheetEntry[]>){
 
 export async function POST(request:Request){
  try{
+  const rejected=rejectUnsafeRequest(request,8192);if(rejected)return rejected;
   const user=await requireUser(request);
   const {text}=await request.json();
   if(typeof text!=="string"||!text.trim()||text.length>2000)return Response.json({error:"invalid_message"},{status:400});

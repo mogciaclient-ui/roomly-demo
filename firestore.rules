@@ -2,7 +2,7 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
-    function isStaff() { return signedIn() && exists(/databases/$(database)/documents/staff/$(request.auth.uid)); }
+    function isStaff() { return signedIn() && get(/databases/$(database)/documents/staff/$(request.auth.uid)).data.active == true; }
     function guestSession() { return get(/databases/$(database)/documents/guestSessions/$(request.auth.uid)).data; }
     function guestCanRead(facilityId, roomId) { return signedIn() && guestSession().active == true && guestSession().expiresAt > request.time && guestSession().facilityId == facilityId && guestSession().roomId == roomId; }
     match /staff/{staffId} { allow read: if signedIn() && request.auth.uid == staffId; allow write: if false; }
@@ -12,7 +12,6 @@ service cloud.firestore {
       match /rooms/{roomId} { allow read, write: if isStaff(); }
       match /threads/{threadId} {
         allow read, write: if isStaff();
-        allow read: if guestCanRead(facilityId, resource.data.roomId);
         match /messages/{messageId} { allow read: if isStaff() || guestCanRead(facilityId, get(/databases/$(database)/documents/facilities/$(facilityId)/threads/$(threadId)).data.roomId); allow write: if isStaff(); }
       }
     }

@@ -1,11 +1,12 @@
 import {randomBytes,randomUUID} from "crypto";
 import {FieldValue,Timestamp} from "firebase-admin/firestore";
 import {adminDb,requireUser} from "@/lib/firebase-admin";
+import {rejectUnsafeRequest} from "@/lib/request-security";
 
 async function authorize(request:Request,facilityId:string){
  const user=await requireUser(request);
  const [staff,facility]=await Promise.all([adminDb.doc(`staff/${user.uid}`).get(),adminDb.doc(`facilities/${facilityId}`).get()]);
- if(!staff.exists)throw new Error("FORBIDDEN");
+ if(!staff.exists||staff.data()?.active!==true)throw new Error("FORBIDDEN");
  if(!facility.exists)throw new Error("FORBIDDEN");
  return {staffId:user.uid};
 }
@@ -28,6 +29,7 @@ export async function GET(request:Request){
 
 export async function POST(request:Request){
  try{
+  const rejected=rejectUnsafeRequest(request,32768);if(rejected)return rejected;
   const body=await request.json();
   const facilityId=typeof body.facilityId==="string"?body.facilityId:"";
   if(!facilityId)return Response.json({error:"invalid_facility"},{status:400});

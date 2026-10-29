@@ -1,5 +1,6 @@
 import {FieldValue,Timestamp} from "firebase-admin/firestore";
 import {adminDb,requireUser} from "@/lib/firebase-admin";
+import {rejectUnsafeRequest} from "@/lib/request-security";
 
 const defaultRichMenu=[
  {label:"公式HP",icon:"↗",prompt:"",actionType:"external_link",url:"",description:"宿泊案内・アクセス"},
@@ -12,9 +13,10 @@ const defaultRichMenu=[
 
 export async function POST(request:Request){
  try{
+  const rejected=rejectUnsafeRequest(request,4096);if(rejected)return rejected;
   const user=await requireUser(request);
   const {roomToken}=await request.json();
-  if(typeof roomToken!=="string"||roomToken.length>160)return Response.json({error:"invalid_token"},{status:400});
+  if(typeof roomToken!=="string"||roomToken.length<20||roomToken.length>160||!/^[A-Za-z0-9_-]+$/.test(roomToken))return Response.json({error:"invalid_token"},{status:400});
   const snap=await adminDb.doc(`roomTokens/${roomToken}`).get();
   if(!snap.exists||snap.data()?.active!==true)return Response.json({error:"invalid_token"},{status:404});
   const data=snap.data()!;
