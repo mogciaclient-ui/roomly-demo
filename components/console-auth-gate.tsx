@@ -5,7 +5,7 @@ import {doc,getDoc} from "firebase/firestore";
 import {auth,db} from "@/lib/firebase";
 
 export function ConsoleAuthGate({children}:{children:React.ReactNode}){
- const production=process.env.NEXT_PUBLIC_ROOMLY_MODE==="production";
+ const production=process.env.NEXT_PUBLIC_ROOMLY_MODE!=="demo";
  const [user,setUser]=useState<User|null>(null);const [loading,setLoading]=useState(false);const [email,setEmail]=useState("");const [password,setPassword]=useState("");const [showPassword,setShowPassword]=useState(false);const [error,setError]=useState("");
  useEffect(()=>{if(!production)return;return onAuthStateChanged(auth,async next=>{if(next&&!next.isAnonymous){const staff=await getDoc(doc(db,"staff",next.uid));if(staff.exists())setUser(next);else{setError("このアカウントはスタッフ登録されていません");await signOut(auth)}}else setUser(null);setLoading(false)})},[production]);
  if(!production)return children;

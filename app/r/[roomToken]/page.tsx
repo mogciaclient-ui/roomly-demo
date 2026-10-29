@@ -5,7 +5,7 @@ import { useDemo } from "@/components/demo-provider";
 import { ProductionGuest } from "@/components/production-guest";
 
 const languages=[{code:"ja",label:"日本語",sub:"Japanese"},{code:"en",label:"English",sub:"英語"},{code:"zh",label:"简体中文",sub:"中国語"},{code:"ko",label:"한국어",sub:"韓国語"}];
-export default function GuestPage(props:{params:Promise<{roomToken:string}>}){if(process.env.NEXT_PUBLIC_ROOMLY_MODE==="production")return <ProductionGuest {...props}/>;return <DemoGuest {...props}/>}
+export default function GuestPage(props:{params:Promise<{roomToken:string}>}){if(process.env.NEXT_PUBLIC_ROOMLY_MODE!=="demo")return <ProductionGuest {...props}/>;return <DemoGuest {...props}/>}
 function DemoGuest({params}:{params:Promise<{roomToken:string}>}){
  const {roomToken}=use(params);const {state,sendGuest}=useDemo();const valid=/^demo-(a|b)-\d+$/.test(roomToken);const parts=roomToken.split("-");const facilityId=`facility-${parts[1]}`;const roomNumber=parts[2];const facility=state.facilities.find(f=>f.id===facilityId);const threadId=`${facilityId}-room-${roomNumber}`;const thread=state.threads.find(t=>t.id===threadId)||state.threads.find(t=>t.facilityId===facilityId&&t.roomNumber===roomNumber);
  const [step,setStep]=useState<"language"|"notify"|"chat">("language");const [language,setLanguage]=useState("ja");const [input,setInput]=useState("");const end=useRef<HTMLDivElement>(null);

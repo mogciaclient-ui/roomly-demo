@@ -13,7 +13,7 @@ type RoomRecord={id:string;roomNumber:string;roomToken:string|null};
 export default function Rooms(){
  const {state,update}=useDemo();
  const facility=state.facilities.find(x=>x.id===state.activeFacilityId);
- const production=process.env.NEXT_PUBLIC_ROOMLY_MODE==="production";
+ const production=process.env.NEXT_PUBLIC_ROOMLY_MODE!=="demo";
  const [rooms,setRooms]=useState<RoomRecord[]>([]);
  const [roomNumber,setRoomNumber]=useState("");
  const [previewRoom,setPreviewRoom]=useState<RoomRecord|null>(null),[previewQr,setPreviewQr]=useState("");
