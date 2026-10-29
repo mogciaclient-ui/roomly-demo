@@ -9,7 +9,7 @@ service cloud.firestore {
     function isStaffFor(facilityId) { return isStaff() && (isTrial() ? request.auth.token.facilityId == facilityId : facilityData(facilityId).accessType == 'production'); }
     match /staff/{staffId} { allow read: if signedIn() && request.auth.uid == staffId; allow write: if false; }
     match /facilities/{facilityId} {
-      allow read: if isStaffFor(facilityId);
+      allow read: if isStaff() && (isTrial() ? request.auth.token.facilityId == facilityId : resource.data.accessType == 'production');
       allow create: if isStaff() && !isTrial() && request.resource.data.accessType == 'production';
       allow update, delete: if isStaffFor(facilityId);
       match /info/{document} { allow read, write: if isStaffFor(facilityId); }
