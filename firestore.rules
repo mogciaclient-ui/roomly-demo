@@ -3,12 +3,15 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function signedIn() { return request.auth != null; }
     function staffData() { return get(/databases/$(database)/documents/staff/$(request.auth.uid)).data; }
+    function facilityData(facilityId) { return get(/databases/$(database)/documents/facilities/$(facilityId)).data; }
     function isTrial() { return signedIn() && request.auth.token.keys().hasAny(['trial']) && request.auth.token.trial == true; }
     function isStaff() { return signedIn() && staffData().active == true && (!isTrial() || staffData().expiresAt > request.time); }
-    function isStaffFor(facilityId) { return isStaff() && (!isTrial() || request.auth.token.facilityId == facilityId); }
+    function isStaffFor(facilityId) { return isStaff() && (isTrial() ? request.auth.token.facilityId == facilityId : facilityData(facilityId).accessType == 'production'); }
     match /staff/{staffId} { allow read: if signedIn() && request.auth.uid == staffId; allow write: if false; }
     match /facilities/{facilityId} {
-      allow read, write: if isStaffFor(facilityId);
+      allow read: if isStaffFor(facilityId);
+      allow create: if isStaff() && !isTrial() && request.resource.data.accessType == 'production';
+      allow update, delete: if isStaffFor(facilityId);
       match /info/{document} { allow read, write: if isStaffFor(facilityId); }
       match /rooms/{roomId} { allow read, write: if isStaffFor(facilityId); }
       match /threads/{threadId} {

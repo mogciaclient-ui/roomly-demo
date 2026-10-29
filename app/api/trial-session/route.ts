@@ -33,7 +33,7 @@ export async function POST(request:Request){
    await adminAuth.setCustomUserClaims(uid,{trial:true,facilityId,trialExpiresAt:expiresAt.toMillis()});
    const batch=adminDb.batch();
    batch.set(adminDb.doc(`staff/${uid}`),{active:true,trial:true,facilityId,displayName:"体験ユーザー",createdBy:creator.uid,createdAt:FieldValue.serverTimestamp(),expiresAt});
-   batch.set(adminDb.doc(`facilities/${facilityId}`),{name:"Roomly 体験施設",address:"",staffHours:[{start:"08:00",end:"11:00"},{start:"15:00",end:"21:00"}],richMenu:[],trial:true,createdAt:FieldValue.serverTimestamp(),expiresAt});
+   batch.set(adminDb.doc(`facilities/${facilityId}`),{name:"Roomly 体験施設",address:"",staffHours:[{start:"08:00",end:"11:00"},{start:"15:00",end:"21:00"}],richMenu:[],trial:true,accessType:"trial",createdAt:FieldValue.serverTimestamp(),expiresAt});
    batch.set(adminDb.doc(`facilities/${facilityId}/info/main`),sampleInfo);
    for(const roomNumber of ["101","102","103"]){
     const roomId=encodeURIComponent(roomNumber),roomToken=randomBytes(24).toString("base64url");

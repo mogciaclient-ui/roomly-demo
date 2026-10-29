@@ -21,7 +21,7 @@ export function ConsoleShell({children}:{children:React.ReactNode}){
 
 function FacilitySetup(){
  const [name,setName]=useState(""),[busy,setBusy]=useState(false),[error,setError]=useState("");
- return <main className="console-login"><form onSubmit={async event=>{event.preventDefault();setBusy(true);setError("");try{const id=crypto.randomUUID();await setDoc(doc(db,"facilities",id),{name:name.trim(),address:"",staffHours:[{start:"08:00",end:"11:00"},{start:"15:00",end:"21:00"}],richMenu:[],createdAt:new Date()});await setDoc(doc(db,"facilities",id,"info","main"),{wifi:"",bath:"",breakfast:"",checkout:"",parking:"",shuttle:"",emergency:""})}catch{setError("施設を登録できませんでした");setBusy(false)}}}>
+ return <main className="console-login"><form onSubmit={async event=>{event.preventDefault();setBusy(true);setError("");try{const id=crypto.randomUUID();await setDoc(doc(db,"facilities",id),{name:name.trim(),address:"",staffHours:[{start:"08:00",end:"11:00"},{start:"15:00",end:"21:00"}],richMenu:[],accessType:"production",createdAt:new Date()});await setDoc(doc(db,"facilities",id,"info","main"),{wifi:"",bath:"",breakfast:"",checkout:"",parking:"",shuttle:"",emergency:""})}catch{setError("施設を登録できませんでした");setBusy(false)}}}>
   <div className="console-brand">roomly<span>•</span><small>INITIAL SETUP</small></div><h1>施設を登録</h1><p>最初にRoomlyを利用する施設を登録してください</p>
   <label>施設名<input required value={name} onChange={event=>setName(event.target.value)} placeholder="例：旅館 Roomly"/></label>
   {error&&<div className="login-error">{error}</div>}<button className="primary" disabled={busy}>{busy?"登録中…":"施設を登録して開始"}</button>
