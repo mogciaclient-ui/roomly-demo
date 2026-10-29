@@ -21,5 +21,5 @@ export function LocalDemoProvider({children}:{children:React.ReactNode}){
  if(!ready)return <div className="app-loading" role="status"><div className="guest-brand">roomly<span>•</span></div><p>Firebaseに接続中...</p></div>;
  return <RoomlyContext.Provider value={value}>{children}</RoomlyContext.Provider>
 }
-export function DemoProvider({children}:{children:React.ReactNode}){return process.env.NEXT_PUBLIC_ROOMLY_MODE==="production"?<ProductionProvider>{children}</ProductionProvider>:<LocalDemoProvider>{children}</LocalDemoProvider>}
+export function DemoProvider({children}:{children:React.ReactNode}){return process.env.NEXT_PUBLIC_ROOMLY_MODE==="demo"?<LocalDemoProvider>{children}</LocalDemoProvider>:<ProductionProvider>{children}</ProductionProvider>}
 export const useDemo=useRoomly;
