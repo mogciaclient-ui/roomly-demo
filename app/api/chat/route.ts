@@ -45,6 +45,13 @@ function answerFromFreeEntries(text:string,sheet:Record<string,SheetEntry[]>){
  if(custom?.content?.trim())return {answer:custom.content.trim(),source:"custom"};
  return null;
 }
+function formatKnowledgeAnswer(key:string|null,answer:string){
+ if(key!=="wifi"||/SSID[：:]|パスワード[：:]/i.test(answer))return answer;
+ const parts=answer.split("/").map(part=>part.trim()).filter(Boolean);
+ if(parts.length<3)return answer;
+ const [location,ssid,password,...notes]=parts;
+ return [`Wi-Fi情報`,`SSID：${ssid}`,`パスワード：${password}`,location?`利用場所：${location}`:"",notes.length?`接続できない場合：${notes.join(" / ")}`:""].filter(Boolean).join("\n");
+}
 
 export async function POST(request:Request){
  try{
@@ -71,7 +78,7 @@ export async function POST(request:Request){
    const freeAnswer=answerFromFreeEntries(text,sheet);
    const rule=knowledgeRules.find(item=>item.pattern.test(text));
    const answer=freeAnswer?.answer??(rule&&typeof info[rule.key]==="string"?info[rule.key].trim():"");
-   if(answer){reply=answer;source=freeAnswer?.source??rule!.key}else{reply="チャット設定に回答がないため、ホテルのスタッフへ確認します。";status="waiting"}
+   if(answer){source=freeAnswer?.source??rule!.key;reply=formatKnowledgeAnswer(source,answer)}else{reply="チャット設定に回答がないため、ホテルのスタッフへ確認します。";status="waiting"}
   }
   const afterHours=status==="waiting"&&!availability.open;
   if(afterHours&&!isEmergency)reply=`現在はスタッフ対応時間外です。ご用件はホテルへ送信しました。${availability.nextLabel??"次の対応時間"}にスタッフが確認します。`;
