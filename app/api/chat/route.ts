@@ -1,7 +1,8 @@
 import {FieldValue,Timestamp} from "firebase-admin/firestore";
-import {adminDb,requireUser} from "@/lib/firebase-admin";
+import {adminDb} from "@/lib/firebase-admin";
 import {formatKnowledgeAnswer} from "@/lib/format-knowledge";
 import {rejectUnsafeRequest} from "@/lib/request-security";
+import {requireGuestSession} from "@/lib/guest-session";
 
 const knowledgeRules=[
  {pattern:/wi.?fi|ワイファイ|ssid|パスワード/i,key:"wifi"},
@@ -51,11 +52,9 @@ function answerFromFreeEntries(text:string,sheet:Record<string,SheetEntry[]>){
 export async function POST(request:Request){
  try{
   const rejected=rejectUnsafeRequest(request,8192);if(rejected)return rejected;
-  const user=await requireUser(request);
+  const session=await requireGuestSession(request);
   const {text}=await request.json();
   if(typeof text!=="string"||!text.trim()||text.length>2000)return Response.json({error:"invalid_message"},{status:400});
-  const snap=await adminDb.doc(`guestSessions/${user.uid}`).get(),session=snap.data();
-  if(!snap.exists||!session?.active||session.expiresAt.toMillis()<Date.now())return Response.json({error:"session_expired"},{status:403});
   const {facilityId,threadId,roomId}=session;
   const thread=adminDb.doc(`facilities/${facilityId}/threads/${threadId}`);
   const [infoSnap,facilitySnap]=await Promise.all([adminDb.doc(`facilities/${facilityId}/info/main`).get(),adminDb.doc(`facilities/${facilityId}`).get()]);
@@ -80,12 +79,12 @@ export async function POST(request:Request){
   if(afterHours&&!isEmergency)reply=`現在はスタッフ対応時間外です。ご用件はホテルへ送信しました。${availability.nextLabel??"次の対応時間"}にスタッフが確認します。`;
   const batch=adminDb.batch(),createdAt=Date.now();
   batch.set(thread,{roomId,status,afterHours,emergency:isEmergency,nextStaffResponse:afterHours?availability.nextLabel:null,lastMessageAt:FieldValue.serverTimestamp(),unreadByStaff:status==="waiting"?1:0},{merge:true});
-  batch.set(thread.collection("messages").doc(),{from:"guest",text:text.trim(),createdAt:Timestamp.fromMillis(createdAt),guestUid:user.uid});
+  batch.set(thread.collection("messages").doc(),{from:"guest",text:text.trim(),createdAt:Timestamp.fromMillis(createdAt),guestSessionId:session.sessionId});
   batch.set(thread.collection("messages").doc(),{from:"ai",text:reply,source,createdAt:Timestamp.fromMillis(createdAt+1)});
   await batch.commit();
   return Response.json({type:status==="waiting"?"handoff":"answer",text:reply,source,afterHours,nextStaffResponse:afterHours?availability.nextLabel:null});
  }catch(error){
-  const unauthorized=error instanceof Error&&error.message==="UNAUTHORIZED";
-  return Response.json({error:unauthorized?"unauthorized":"message_failed"},{status:unauthorized?401:500});
+  const expired=error instanceof Error&&error.message==="SESSION_EXPIRED";
+  return Response.json({error:expired?"session_expired":"message_failed"},{status:expired?403:500});
  }
 }

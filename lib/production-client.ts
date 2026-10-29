@@ -1,4 +1,2 @@
-import {getGuestUser} from "./firebase";
-async function token(){return (await getGuestUser()).getIdToken()}
-export async function openRoomSession(roomToken:string){const response=await fetch("/api/room-session",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({roomToken})});if(!response.ok)throw new Error("ROOM_SESSION_FAILED");return response.json()}
-export async function sendProductionGuestMessage(text:string){const response=await fetch("/api/chat",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await token()}`},body:JSON.stringify({text})});if(!response.ok)throw new Error(response.status===403?"SESSION_EXPIRED":"MESSAGE_FAILED");return response.json()}
+export async function openRoomSession(roomToken:string){const response=await fetch("/api/room-session",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({roomToken})});if(!response.ok)throw new Error("ROOM_SESSION_FAILED");return response.json()}
+export async function sendProductionGuestMessage(text:string){const response=await fetch("/api/chat",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({text})});if(!response.ok)throw new Error(response.status===403?"SESSION_EXPIRED":"MESSAGE_FAILED");return response.json()}
