@@ -263,6 +263,9 @@ function Outreach({ onClose }: { onClose: () => void }) {
   const f = state.facilities.find((x) => x.id === state.activeFacilityId)!;
   const [room, setRoom] = useState(f.rooms[0]);
   const [text, setText] = useState("お迎えに伺います");
+  const target = state.threads
+    .filter((thread) => thread.facilityId === f.id && thread.roomNumber === room)
+    .sort((left, right) => right.lastMessageAt - left.lastMessageAt)[0];
   return (
     <div className="modal-bg">
       <div className="modal">
@@ -296,13 +299,16 @@ function Outreach({ onClose }: { onClose: () => void }) {
         </div>
         <button
           className="button primary wide"
+          disabled={!target || !text.trim()}
           onClick={() => {
-            sendStaff(`${f.id}-room-${room}`, text, true);
+            if (!target) return;
+            sendStaff(target.id, text, true);
             onClose();
           }}
         >
           この内容で送信
         </button>
+        {!target ? <p className="form-message">お客様が客室チャットを開いた後に送信できます</p> : null}
       </div>
     </div>
   );
