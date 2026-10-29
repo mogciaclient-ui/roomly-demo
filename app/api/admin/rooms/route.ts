@@ -4,25 +4,21 @@ import {adminDb,requireUser} from "@/lib/firebase-admin";
 
 async function authorize(request:Request,facilityId:string){
  const user=await requireUser(request);
- const staff=await adminDb.doc(`staff/${user.uid}`).get();
+ const [staff,facility]=await Promise.all([adminDb.doc(`staff/${user.uid}`).get(),adminDb.doc(`facilities/${facilityId}`).get()]);
  if(!staff.exists)throw new Error("FORBIDDEN");
- const facility=await adminDb.doc(`facilities/${facilityId}`).get();
  if(!facility.exists)throw new Error("FORBIDDEN");
  return {staffId:user.uid};
 }
 
 export async function GET(request:Request){
  try{
-  const facilityId=new URL(request.url).searchParams.get("facilityId")??"";
+  const params=new URL(request.url).searchParams,facilityId=params.get("facilityId")??"",includeStays=params.get("includeStays")==="1";
   if(!facilityId)return Response.json({error:"invalid_facility"},{status:400});
   await authorize(request,facilityId);
-  const [roomsSnap,staysSnap]=await Promise.all([
-   adminDb.collection(`facilities/${facilityId}/rooms`).orderBy("roomNumber").get(),
-   adminDb.collection(`facilities/${facilityId}/stays`).orderBy("validFrom","desc").limit(200).get(),
-  ]);
+  const [roomsSnap,staysSnap]=await Promise.all([adminDb.collection(`facilities/${facilityId}/rooms`).orderBy("roomNumber").get(),includeStays?adminDb.collection(`facilities/${facilityId}/stays`).orderBy("validFrom","desc").limit(200).get():Promise.resolve(null)]);
   return Response.json({
    rooms:roomsSnap.docs.map(doc=>({id:doc.id,roomNumber:doc.data().roomNumber,roomToken:doc.data().roomToken??null})),
-   stays:staysSnap.docs.map(doc=>{const data=doc.data();return {id:doc.id,roomNumber:data.roomNumber,guests:data.guests??1,language:data.language??"ja",guestName:data.guestName??"",memo:data.memo??"",validFrom:data.validFrom?.toMillis?.(),validUntil:data.validUntil?.toMillis?.(),active:data.active!==false}}),
+   stays:staysSnap?.docs.map(doc=>{const data=doc.data();return {id:doc.id,roomNumber:data.roomNumber,guests:data.guests??1,language:data.language??"ja",guestName:data.guestName??"",memo:data.memo??"",validFrom:data.validFrom?.toMillis?.(),validUntil:data.validUntil?.toMillis?.(),active:data.active!==false}})??[],
   });
  }catch(error){
   const message=error instanceof Error?error.message:"";

@@ -1,7 +1,5 @@
 "use client";
 import {useEffect,useState} from "react";
-import QRCode from "qrcode";
-import {jsPDF} from "jspdf";
 import {auth} from "@/lib/firebase";
 import {useDemo} from "@/components/demo-provider";
 import {Page} from "../stays/page";
@@ -28,9 +26,9 @@ export default function Rooms(){
  if(!facility)return <div className="app-loading"><p>施設情報を読み込み中...</p></div>;
 
  const roomUrl=(room:RoomRecord)=>`${origin}/r/${room.roomToken}`;
- const makeSheet=async(room:RoomRecord)=>{const canvas=document.createElement("canvas");canvas.width=W;canvas.height=H;const c=canvas.getContext("2d")!;c.fillStyle="#fffaf9";c.fillRect(0,0,W,H);c.textAlign="center";c.font="600 68px 'Noto Sans JP',sans-serif";const brand="Roomly",brandWidth=c.measureText(brand).width;c.fillStyle="#201613";c.fillText(brand,W/2-10,150);c.fillStyle="#ad2218";c.fillText(".",W/2+brandWidth/2+5,150);c.fillStyle="#786c66";c.font="500 30px 'Noto Sans JP',sans-serif";c.fillText(facility.name,W/2,245);c.fillStyle="#201613";c.font="600 80px 'Noto Sans JP',sans-serif";c.fillText(formatRoomLabel(room.roomNumber),W/2,360);const qr=document.createElement("canvas");await QRCode.toCanvas(qr,roomUrl(room),{width:650,margin:3,color:{dark:"#201613",light:"#ffffff"},errorCorrectionLevel:"H"});c.fillStyle="#fff";c.fillRect(245,430,750,750);c.drawImage(qr,295,480,650,650);c.fillStyle="#201613";c.font="500 32px 'Noto Sans JP',sans-serif";c.fillText("スマートフォンでQRコードを読み取ってください",W/2,1290);c.fillStyle="#81736d";c.font="400 25px 'Noto Sans JP',sans-serif";c.fillText("このQRコードは客室に常設できます。",W/2,1380);c.fillText("宿泊者が変わっても交換する必要はありません。",W/2,1425);return canvas.toDataURL("image/jpeg",.96)};
- const downloadOne=async(room:RoomRecord)=>{if(!room.roomToken)return;const pdf=new jsPDF({unit:"mm",format:"a4",orientation:"portrait"});pdf.addImage(await makeSheet(room),"JPEG",0,0,210,297);pdf.save(`${facility.name}-${room.roomNumber}-QR.pdf`)};
- const showQr=async(room:RoomRecord)=>{if(!room.roomToken)return;setPreviewRoom(room);setPreviewQr("");setPreviewQr(await QRCode.toDataURL(roomUrl(room),{width:720,margin:3,color:{dark:"#201613",light:"#ffffff"},errorCorrectionLevel:"H"}))};
+ const makeSheet=async(room:RoomRecord)=>{const QRCode=await import("qrcode");const canvas=document.createElement("canvas");canvas.width=W;canvas.height=H;const c=canvas.getContext("2d")!;c.fillStyle="#fffaf9";c.fillRect(0,0,W,H);c.textAlign="center";c.font="600 68px 'Noto Sans JP',sans-serif";const brand="Roomly",brandWidth=c.measureText(brand).width;c.fillStyle="#201613";c.fillText(brand,W/2-10,150);c.fillStyle="#ad2218";c.fillText(".",W/2+brandWidth/2+5,150);c.fillStyle="#786c66";c.font="500 30px 'Noto Sans JP',sans-serif";c.fillText(facility.name,W/2,245);c.fillStyle="#201613";c.font="600 80px 'Noto Sans JP',sans-serif";c.fillText(formatRoomLabel(room.roomNumber),W/2,360);const qr=document.createElement("canvas");await QRCode.toCanvas(qr,roomUrl(room),{width:650,margin:3,color:{dark:"#201613",light:"#ffffff"},errorCorrectionLevel:"H"});c.fillStyle="#fff";c.fillRect(245,430,750,750);c.drawImage(qr,295,480,650,650);c.fillStyle="#201613";c.font="500 32px 'Noto Sans JP',sans-serif";c.fillText("スマートフォンでQRコードを読み取ってください",W/2,1290);c.fillStyle="#81736d";c.font="400 25px 'Noto Sans JP',sans-serif";c.fillText("このQRコードは客室に常設できます。",W/2,1380);c.fillText("宿泊者が変わっても交換する必要はありません。",W/2,1425);return canvas.toDataURL("image/jpeg",.96)};
+ const downloadOne=async(room:RoomRecord)=>{if(!room.roomToken)return;const {jsPDF}=await import("jspdf");const pdf=new jsPDF({unit:"mm",format:"a4",orientation:"portrait"});pdf.addImage(await makeSheet(room),"JPEG",0,0,210,297);pdf.save(`${facility.name}-${room.roomNumber}-QR.pdf`)};
+ const showQr=async(room:RoomRecord)=>{if(!room.roomToken)return;setPreviewRoom(room);setPreviewQr("");const QRCode=await import("qrcode");setPreviewQr(await QRCode.toDataURL(roomUrl(room),{width:720,margin:3,color:{dark:"#201613",light:"#ffffff"},errorCorrectionLevel:"H"}))};
 
  return <Page title="客室・QR設定" sub="導入時に客室を登録し、客室へ設置する常設QRを発行します">
   <div className="room-setup-note"><span>初期設定</span><div><b>一度設定すれば、通常はこのページを操作する必要はありません</b><p>日々のチェックイン・チェックアウトや宿泊者の管理は「宿泊管理」で行います。</p></div></div>
