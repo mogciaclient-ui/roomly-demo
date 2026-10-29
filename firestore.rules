@@ -1,0 +1,23 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() { return request.auth != null; }
+    function isStaff() { return signedIn() && exists(/databases/$(database)/documents/staff/$(request.auth.uid)); }
+    function guestSession() { return get(/databases/$(database)/documents/guestSessions/$(request.auth.uid)).data; }
+    function guestCanRead(facilityId, roomId) { return signedIn() && guestSession().active == true && guestSession().expiresAt > request.time && guestSession().facilityId == facilityId && guestSession().roomId == roomId; }
+    match /staff/{staffId} { allow read: if signedIn() && request.auth.uid == staffId; allow write: if false; }
+    match /facilities/{facilityId} {
+      allow read, write: if isStaff();
+      match /info/{document} { allow read, write: if isStaff(); }
+      match /rooms/{roomId} { allow read, write: if isStaff(); }
+      match /threads/{threadId} {
+        allow read, write: if isStaff();
+        allow read: if guestCanRead(facilityId, resource.data.roomId);
+        match /messages/{messageId} { allow read: if isStaff() || guestCanRead(facilityId, get(/databases/$(database)/documents/facilities/$(facilityId)/threads/$(threadId)).data.roomId); allow write: if isStaff(); }
+      }
+    }
+    match /guestSessions/{uid} { allow read: if signedIn() && request.auth.uid == uid; allow write: if false; }
+    match /roomTokens/{token} { allow read, write: if false; }
+    match /{document=**} { allow read, write: if false; }
+  }
+}
