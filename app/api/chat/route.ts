@@ -1,4 +1,4 @@
-import {FieldValue} from "firebase-admin/firestore";
+import {FieldValue,Timestamp} from "firebase-admin/firestore";
 import {adminDb,requireUser} from "@/lib/firebase-admin";
 
 const knowledgeRules=[
@@ -55,10 +55,10 @@ export async function POST(request:Request){
    const answer=freeAnswer?.answer??(rule&&typeof info[rule.key]==="string"?info[rule.key].trim():"");
    if(answer){reply=answer;source=freeAnswer?.source??rule!.key}else{reply="チャット設定に回答がないため、ホテルのスタッフへ確認します。";status="waiting"}
   }
-  const batch=adminDb.batch();
+  const batch=adminDb.batch(),createdAt=Date.now();
   batch.set(thread,{roomId,status,lastMessageAt:FieldValue.serverTimestamp(),unreadByStaff:status==="waiting"?1:0},{merge:true});
-  batch.set(thread.collection("messages").doc(),{from:"guest",text:text.trim(),createdAt:FieldValue.serverTimestamp(),guestUid:user.uid});
-  batch.set(thread.collection("messages").doc(),{from:"ai",text:reply,source,createdAt:FieldValue.serverTimestamp()});
+  batch.set(thread.collection("messages").doc(),{from:"guest",text:text.trim(),createdAt:Timestamp.fromMillis(createdAt),guestUid:user.uid});
+  batch.set(thread.collection("messages").doc(),{from:"ai",text:reply,source,createdAt:Timestamp.fromMillis(createdAt+1)});
   await batch.commit();
   return Response.json({type:status==="waiting"?"handoff":"answer",text:reply,source});
  }catch(error){

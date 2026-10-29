@@ -22,7 +22,7 @@ export function ProductionProvider({children}:{children:React.ReactNode}){
    facilities.push({id:facilityDoc.id,name:data.name,address:data.address??"",staffHours:data.staffHours??[],info:infoSnap.data()??{},richMenu:data.richMenu??[],rooms:roomsSnap.docs.map(x=>x.data().roomNumber)});
    for(const threadDoc of threadsSnap.docs){
     const value=threadDoc.data(),messagesSnap=await getDocs(collection(db,"facilities",facilityDoc.id,"threads",threadDoc.id,"messages"));
-    const messages=messagesSnap.docs.map(x=>{const message=x.data();return {id:x.id,from:message.from,text:message.text,staffName:message.staffName,createdAt:message.createdAt?.toMillis?.()??Date.now()} as Message}).sort((a,b)=>a.createdAt-b.createdAt);
+    const messages=messagesSnap.docs.map(x=>{const message=x.data();return {id:x.id,from:message.from,text:message.text,staffName:message.staffName,createdAt:message.createdAt?.toMillis?.()??Date.now()} as Message}).sort((a,b)=>a.createdAt-b.createdAt||(a.from==="guest"?-1:b.from==="guest"?1:0));
     threads.push({id:threadDoc.id,facilityId:facilityDoc.id,roomNumber:value.roomNumber??"",guestName:value.guestName??"ゲスト様",guests:value.guests??1,nights:value.nights??1,status:value.status??"ai",assignee:value.assignee??"",handoverNote:value.handoverNote??"",unreadByStaff:value.unreadByStaff??0,lastMessageAt:value.lastMessageAt?.toMillis?.()??Date.now(),messages});
    }
   }
