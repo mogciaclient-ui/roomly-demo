@@ -21,6 +21,7 @@ export async function POST(request:Request){
   if(!snap.exists||snap.data()?.active!==true)return Response.json({error:"invalid_token"},{status:404});
   const data=snap.data()!;
   const now=Date.now();
+  if(data.expiresAt instanceof Timestamp&&data.expiresAt.toMillis()<=now)return Response.json({error:"invalid_token"},{status:404});
   const stays=await adminDb.collection(`facilities/${data.facilityId}/stays`).where("roomNumber","==",data.roomNumber).get();
   const activeStay=stays.docs.find(doc=>{const stay=doc.data();return stay.active!==false&&stay.validFrom instanceof Timestamp&&stay.validUntil instanceof Timestamp&&stay.validFrom.toMillis()<=now&&now<stay.validUntil.toMillis()});
   if(!activeStay)return Response.json({error:"outside_stay_period"},{status:403});

@@ -7,6 +7,7 @@ async function authorize(request:Request,facilityId:string){
  const user=await requireUser(request);
  const [staff,facility]=await Promise.all([adminDb.doc(`staff/${user.uid}`).get(),adminDb.doc(`facilities/${facilityId}`).get()]);
  if(!staff.exists||staff.data()?.active!==true)throw new Error("FORBIDDEN");
+ if(user.trial===true&&(user.facilityId!==facilityId||staff.data()?.expiresAt?.toMillis?.()<=Date.now()))throw new Error("FORBIDDEN");
  if(!facility.exists)throw new Error("FORBIDDEN");
  return {staffId:user.uid};
 }
