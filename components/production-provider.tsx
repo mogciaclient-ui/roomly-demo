@@ -28,7 +28,7 @@ export function ProductionProvider({children}:{children:React.ReactNode}){
     threads.push({id:threadDoc.id,facilityId:facilityDoc.id,roomNumber:value.roomNumber??"",guestName:value.guestName??"ゲスト様",guests:value.guests??1,nights:value.nights??1,status:value.status??"ai",assignee:value.assignee??"",handoverNote:value.handoverNote??"",unreadByStaff:value.unreadByStaff??0,lastMessageAt:value.lastMessageAt?.toMillis?.()??Date.now(),messages,afterHours:value.afterHours===true,emergency:value.emergency===true,nextStaffResponse:value.nextStaffResponse??undefined});
    }
   }
-  const user=auth.currentUser,staffName=user?.displayName||user?.email||"管理者";
+  const user=auth.currentUser,staffSnap=user?await getDoc(doc(db,"staff",user.uid)):null,staffName=typeof staffSnap?.data()?.displayName==="string"&&staffSnap.data()!.displayName.trim()?staffSnap.data()!.displayName.trim():"スタッフ";
   setState(current=>({facilities,threads,staff:[staffName],activeFacilityId:current.activeFacilityId&&facilities.some(x=>x.id===current.activeFacilityId)?current.activeFacilityId:facilities[0]?.id??"",currentStaff:staffName}));
   setReady(true);
  };
