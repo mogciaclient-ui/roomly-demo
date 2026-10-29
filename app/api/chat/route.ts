@@ -1,5 +1,6 @@
 import {FieldValue,Timestamp} from "firebase-admin/firestore";
 import {adminDb,requireUser} from "@/lib/firebase-admin";
+import {formatKnowledgeAnswer} from "@/lib/format-knowledge";
 
 const knowledgeRules=[
  {pattern:/wi.?fi|ワイファイ|ssid|パスワード/i,key:"wifi"},
@@ -45,13 +46,6 @@ function answerFromFreeEntries(text:string,sheet:Record<string,SheetEntry[]>){
  if(custom?.content?.trim())return {answer:custom.content.trim(),source:"custom"};
  return null;
 }
-function formatKnowledgeAnswer(key:string|null,answer:string){
- if(key!=="wifi"||/SSID[：:]|パスワード[：:]/i.test(answer))return answer;
- const parts=answer.split("/").map(part=>part.trim()).filter(Boolean);
- if(parts.length<3)return answer;
- const [location,ssid,password,...notes]=parts;
- return [`Wi-Fi情報`,`SSID：${ssid}`,`パスワード：${password}`,location?`利用場所：${location}`:"",notes.length?`接続できない場合：${notes.join(" / ")}`:""].filter(Boolean).join("\n");
-}
 
 export async function POST(request:Request){
  try{
@@ -68,7 +62,7 @@ export async function POST(request:Request){
   let reply="",status:"ai"|"waiting"="ai",source:string|null=null,isEmergency=false;
   if(emergencyRequest.test(text)){
    isEmergency=true;
-   reply=`緊急の可能性があります。命に関わる場合は、すぐに119番へ連絡してください。${info.emergency??"客室電話またはホテルの緊急連絡先へご連絡ください。"}`;
+   reply=`緊急の可能性があります。命に関わる場合は、すぐに119番へ連絡してください。\n\n${typeof info.emergency==="string"?formatKnowledgeAnswer("emergency",info.emergency):"客室電話またはホテルの緊急連絡先へご連絡ください。"}`;
    status="waiting";
   }else if(actionRequest.test(text)){
    reply="スタッフによる対応が必要なため、ホテルへお伝えしました。そのままお待ちください。";
