@@ -4,6 +4,7 @@ import {auth} from "@/lib/firebase";
 import {useDemo} from "@/components/demo-provider";
 import {Page} from "../stays/page";
 import {formatRoomLabel} from "@/lib/room-label";
+import {ROOMLY_PUBLIC_ORIGIN} from "@/lib/public-url";
 
 const W=1240,H=1754;
 type RoomRecord={id:string;roomNumber:string;roomToken:string|null};
@@ -15,9 +16,8 @@ export default function Rooms(){
  const [rooms,setRooms]=useState<RoomRecord[]>([]);
  const [roomNumber,setRoomNumber]=useState("");
  const [previewRoom,setPreviewRoom]=useState<RoomRecord|null>(null),[previewQr,setPreviewQr]=useState("");
- const [busy,setBusy]=useState(false),[message,setMessage]=useState(""),[origin,setOrigin]=useState("");
+ const [busy,setBusy]=useState(false),[message,setMessage]=useState("");
 
- useEffect(()=>{setOrigin(window.location.origin)},[]);
  useEffect(()=>{if(!facility)return;if(!production){setRooms(facility.rooms.map(room=>({id:room,roomNumber:room,roomToken:`demo-${facility.id.at(-1)}-${room}`})));return}void refresh(facility.id)},[facility?.id,facility?.rooms.join("|"),production]);
 
  async function request(method:"GET"|"POST",facilityId:string,body?:unknown){const user=auth.currentUser;if(!user)throw new Error("ログインが必要です");const token=await user.getIdToken();const response=await fetch(`/api/admin/rooms${method==="GET"?`?facilityId=${encodeURIComponent(facilityId)}`:""}`,{method,headers:{authorization:`Bearer ${token}`,...(body?{"content-type":"application/json"}:{})},body:body?JSON.stringify(body):undefined});const data=await response.json();if(!response.ok)throw new Error(data.error==="invalid_stay"?"チェックイン・チェックアウト日時を確認してください":data.error==="stay_overlap"?"同じ客室の宿泊期間が重複しています":"処理に失敗しました");return data}
@@ -25,7 +25,7 @@ export default function Rooms(){
  async function register(numbers:string[]){if(!facility||!numbers.length)return;setBusy(true);setMessage("");try{if(production){await request("POST",facility.id,{action:"registerRooms",facilityId:facility.id,roomNumbers:numbers});await refresh(facility.id)}else update(state=>{const target=state.facilities.find(x=>x.id===facility.id)!;for(const number of numbers)if(!target.rooms.includes(number))target.rooms.push(number);return state});setRoomNumber("");setMessage("客室を登録しました")}catch(error){setMessage(error instanceof Error?error.message:"登録に失敗しました")}finally{setBusy(false)}}
  if(!facility)return <div className="app-loading"><p>施設情報を読み込み中...</p></div>;
 
- const roomUrl=(room:RoomRecord)=>`${origin}/r/${room.roomToken}`;
+ const roomUrl=(room:RoomRecord)=>`${ROOMLY_PUBLIC_ORIGIN}/r/${room.roomToken}`;
  const makeSheet=async(room:RoomRecord)=>{const QRCode=await import("qrcode");const canvas=document.createElement("canvas");canvas.width=W;canvas.height=H;const c=canvas.getContext("2d")!;c.fillStyle="#fffaf9";c.fillRect(0,0,W,H);c.textAlign="center";c.font="600 68px 'Noto Sans JP',sans-serif";const brand="Roomly",brandWidth=c.measureText(brand).width;c.fillStyle="#201613";c.fillText(brand,W/2-10,150);c.fillStyle="#ad2218";c.fillText(".",W/2+brandWidth/2+5,150);c.fillStyle="#786c66";c.font="500 30px 'Noto Sans JP',sans-serif";c.fillText(facility.name,W/2,245);c.fillStyle="#201613";c.font="600 80px 'Noto Sans JP',sans-serif";c.fillText(formatRoomLabel(room.roomNumber),W/2,360);const qr=document.createElement("canvas");await QRCode.toCanvas(qr,roomUrl(room),{width:650,margin:3,color:{dark:"#201613",light:"#ffffff"},errorCorrectionLevel:"H"});c.fillStyle="#fff";c.fillRect(245,430,750,750);c.drawImage(qr,295,480,650,650);c.fillStyle="#201613";c.font="500 32px 'Noto Sans JP',sans-serif";c.fillText("スマートフォンでQRコードを読み取ってください",W/2,1290);c.fillStyle="#81736d";c.font="400 25px 'Noto Sans JP',sans-serif";c.fillText("このQRコードは客室に常設できます。",W/2,1380);c.fillText("宿泊者が変わっても交換する必要はありません。",W/2,1425);return canvas.toDataURL("image/jpeg",.96)};
  const downloadOne=async(room:RoomRecord)=>{if(!room.roomToken)return;const {jsPDF}=await import("jspdf");const pdf=new jsPDF({unit:"mm",format:"a4",orientation:"portrait"});pdf.addImage(await makeSheet(room),"JPEG",0,0,210,297);pdf.save(`${facility.name}-${room.roomNumber}-QR.pdf`)};
  const showQr=async(room:RoomRecord)=>{if(!room.roomToken)return;setPreviewRoom(room);setPreviewQr("");const QRCode=await import("qrcode");setPreviewQr(await QRCode.toDataURL(roomUrl(room),{width:720,margin:3,color:{dark:"#201613",light:"#ffffff"},errorCorrectionLevel:"H"}))};

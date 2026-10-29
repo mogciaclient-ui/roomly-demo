@@ -4,6 +4,7 @@ import {usePathname} from "next/navigation";
 import {useEffect,useState} from "react";
 import {doc,setDoc} from "firebase/firestore";
 import {auth,db} from "@/lib/firebase";
+import {ROOMLY_PUBLIC_ORIGIN} from "@/lib/public-url";
 import {useDemo} from "./demo-provider";
 
 const nav=[{href:"/console",icon:"▣",label:"チャット"},{href:"/console/stays",icon:"▦",label:"宿泊管理"},{href:"/console/facility",icon:"◇",label:"チャット設定"},{href:"/console/rooms",icon:"⌗",label:"客室・QR設定"}];
@@ -11,7 +12,7 @@ const nav=[{href:"/console",icon:"▣",label:"チャット"},{href:"/console/sta
 export function ConsoleShell({children}:{children:React.ReactNode}){
  const path=usePathname(),{state,update}=useDemo();const [trial,setTrial]=useState<boolean|null>(null),[invite,setInvite]=useState<{url:string;expiresAt:number}|null>(null),[inviteBusy,setInviteBusy]=useState(false),[inviteMessage,setInviteMessage]=useState("");
  useEffect(()=>{void auth.currentUser?.getIdTokenResult().then(result=>setTrial(result.claims.trial===true))},[]);
- async function createTrialLink(){const user=auth.currentUser;if(!user)return;setInviteBusy(true);setInviteMessage("");try{const response=await fetch("/api/trial-session",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await user.getIdToken()}`},body:JSON.stringify({action:"create"})});if(!response.ok)throw new Error();const data=await response.json();const url=`${window.location.origin}/trial?token=${data.token}`;setInvite({url,expiresAt:data.expiresAt});try{await navigator.clipboard?.writeText(url);setInviteMessage("体験リンクをコピーしました")}catch{setInviteMessage("体験リンクを発行しました")}}catch{setInviteMessage("体験リンクを発行できませんでした")}finally{setInviteBusy(false)}}
+ async function createTrialLink(){const user=auth.currentUser;if(!user)return;setInviteBusy(true);setInviteMessage("");try{const response=await fetch("/api/trial-session",{method:"POST",headers:{"content-type":"application/json",authorization:`Bearer ${await user.getIdToken()}`},body:JSON.stringify({action:"create"})});if(!response.ok)throw new Error();const data=await response.json();const url=`${ROOMLY_PUBLIC_ORIGIN}/trial?token=${data.token}`;setInvite({url,expiresAt:data.expiresAt});try{await navigator.clipboard?.writeText(url);setInviteMessage("体験リンクをコピーしました")}catch{setInviteMessage("体験リンクを発行しました")}}catch{setInviteMessage("体験リンクを発行できませんでした")}finally{setInviteBusy(false)}}
  if(!state.facilities.length)return <FacilitySetup/>;
  const facility=state.facilities.find(value=>value.id===state.activeFacilityId)??state.facilities[0];
  const waiting=state.threads.filter(thread=>thread.facilityId===state.activeFacilityId&&thread.status==="waiting").length;
