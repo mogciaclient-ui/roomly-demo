@@ -4,12 +4,12 @@ import { getFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 
 export const firebaseConfig = {
-  apiKey: "AIzaSyD4czZIYhnyiqQk58OnhY1KGbFOVkiByHY",
-  authDomain: "roomly-demo.firebaseapp.com",
-  projectId: "roomly-demo",
-  storageBucket: "roomly-demo.firebasestorage.app",
-  messagingSenderId: "609400114579",
-  appId: "1:609400114579:web:9d3f46abb1df9d85a8ec66",
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY!,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN!,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID!,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET!,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID!,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID!,
 };
 
 export const firebaseApp = getApps()[0] ?? initializeApp(firebaseConfig);
